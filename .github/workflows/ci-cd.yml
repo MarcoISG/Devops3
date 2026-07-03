@@ -9,9 +9,34 @@ on:
   workflow_dispatch:
 
 jobs:
-  quality:
-    name: Pruebas, JaCoCo, SonarCloud y build
+  tests-jacoco:
+    name: Tests and JaCoCo
     runs-on: ubuntu-latest
+    steps:
+      - name: Descargar codigo
+        uses: actions/checkout@v4
+
+      - name: Configurar Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+
+      - name: Ejecutar pruebas con JaCoCo
+        run: ./mvnw -B verify
+
+      - name: Subir reporte JaCoCo
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-report
+          path: target/site/jacoco
+
+  sonarcloud:
+    name: SonarCloud Quality Gate
+    needs: tests-jacoco
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     steps:
       - name: Descargar codigo
         uses: actions/checkout@v4
@@ -25,8 +50,14 @@ jobs:
           java-version: 21
           cache: maven
 
-      - name: Ejecutar pruebas con JaCoCo
-        run: ./mvnw -B verify
+      - name: Compilar para SonarCloud
+        run: ./mvnw -B -DskipTests package
+
+      - name: Descargar reporte JaCoCo
+        uses: actions/download-artifact@v4
+        with:
+          name: jacoco-report
+          path: target/site/jacoco
 
       - name: Analizar en SonarCloud
         env:
@@ -43,12 +74,20 @@ jobs:
             -Dsonar.projectKey="$SONAR_PROJECT_KEY" \
             -Dsonar.qualitygate.wait=true
 
+  docker-build:
+    name: Docker Build
+    needs: sonarcloud
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar codigo
+        uses: actions/checkout@v4
+
       - name: Construir imagen Docker
         run: docker build -t hola-mundo-devops:${{ github.sha }} .
 
   deploy:
-    name: Despliegue en EC2
-    needs: quality
+    name: Deploy to AWS EC2 with Docker Compose
+    needs: docker-build
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
     runs-on:
       - self-hosted
