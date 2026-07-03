@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Application.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Hola Mundo DevOps</a> &gt; <a href="index.source.html" class="el_package">cl.duoc.devops</a> &gt; <span class="el_source">Application.java</span></div><h1>Application.java</h1><pre class="source lang-java linenums">package cl.duoc.devops;
+
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpServer;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
+
+public final class Application {
+  static final String RESPONSE = &quot;Hola Mundo\n&quot;;
+
+  private Application() {
+  }
+
+  public static void main(String[] args) throws IOException {
+<span class="nc" id="L17">    int port = Integer.parseInt(System.getenv().getOrDefault(&quot;PORT&quot;, &quot;8082&quot;));</span>
+<span class="nc" id="L18">    HttpServer server = createServer(new InetSocketAddress(&quot;0.0.0.0&quot;, port));</span>
+<span class="nc" id="L19">    server.start();</span>
+<span class="nc" id="L20">    System.out.println(&quot;Hola Mundo escuchando en puerto &quot; + port);</span>
+<span class="nc" id="L21">  }</span>
+
+  static HttpServer createServer(InetSocketAddress address) throws IOException {
+<span class="fc" id="L24">    HttpServer server = HttpServer.create(address, 0);</span>
+<span class="fc" id="L25">    server.createContext(&quot;/&quot;, Application::handle);</span>
+<span class="fc" id="L26">    return server;</span>
+  }
+
+  private static void handle(HttpExchange exchange) throws IOException {
+<span class="fc" id="L30">    System.out.println(exchange.getRequestMethod() + &quot; &quot; + exchange.getRequestURI().getPath());</span>
+<span class="fc" id="L31">    byte[] bytes = RESPONSE.getBytes(StandardCharsets.UTF_8);</span>
+
+<span class="fc" id="L33">    exchange.getResponseHeaders().set(&quot;Content-Type&quot;, &quot;text/plain; charset=utf-8&quot;);</span>
+<span class="fc" id="L34">    exchange.sendResponseHeaders(200, bytes.length);</span>
+<span class="fc" id="L35">    try (OutputStream stream = exchange.getResponseBody()) {</span>
+<span class="fc" id="L36">      stream.write(bytes);</span>
+    }
+<span class="fc" id="L38">  }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

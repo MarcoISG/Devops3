@@ -1,0 +1,9 @@
+services:
+  app:
+    build: .
+    container_name: hola-mundo-devops
+    ports:
+      - "8082:8082"
+    environment:
+      PORT: "8082"
+    restart: unless-stopped
