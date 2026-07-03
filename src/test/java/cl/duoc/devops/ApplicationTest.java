@@ -23,6 +23,23 @@ class ApplicationTest {
     }
   }
 
+  @Test
+  void mainStartsHelloWorldServer() throws Exception {
+    String previousPort = System.getProperty("PORT");
+    System.setProperty("PORT", "0");
+
+    try {
+      Application.main(new String[0]);
+    } finally {
+      Application.stop();
+      if (previousPort == null) {
+        System.clearProperty("PORT");
+      } else {
+        System.setProperty("PORT", previousPort);
+      }
+    }
+  }
+
   private static HttpResponse<String> get(String url) throws IOException, InterruptedException {
     HttpRequest request = HttpRequest.newBuilder(URI.create(url)).GET().build();
     return CLIENT.send(request, HttpResponse.BodyHandlers.ofString());

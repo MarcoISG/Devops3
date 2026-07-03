@@ -9,12 +9,24 @@ import java.nio.charset.StandardCharsets;
 
 public final class Application {
   static final String RESPONSE = "Hola Mundo\n";
+  private static HttpServer runningServer;
 
   private Application() {
   }
 
   public static void main(String[] args) throws IOException {
-    start("0.0.0.0", Integer.parseInt(System.getenv().getOrDefault("PORT", "8082")));
+    runningServer = start("0.0.0.0", port());
+  }
+
+  static void stop() {
+    if (runningServer != null) {
+      runningServer.stop(0);
+      runningServer = null;
+    }
+  }
+
+  static int port() {
+    return Integer.parseInt(System.getProperty("PORT", System.getenv().getOrDefault("PORT", "8082")));
   }
 
   static HttpServer start(String host, int port) throws IOException {
