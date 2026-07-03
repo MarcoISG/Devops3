@@ -36,7 +36,10 @@ jobs:
     name: SonarCloud Quality Gate
     needs: tests-jacoco
     runs-on: ubuntu-latest
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      SONAR_ORGANIZATION: ${{ vars.SONAR_ORGANIZATION }}
+      SONAR_PROJECT_KEY: ${{ vars.SONAR_PROJECT_KEY }}
     steps:
       - name: Descargar codigo
         uses: actions/checkout@v4
@@ -50,24 +53,30 @@ jobs:
           java-version: 21
           cache: maven
 
+      - name: Validar configuracion SonarCloud
+        if: github.event_name != 'pull_request' && (env.SONAR_TOKEN == '' || env.SONAR_ORGANIZATION == '' || env.SONAR_PROJECT_KEY == '')
+        run: |
+          echo "Falta configurar SONAR_TOKEN, SONAR_ORGANIZATION o SONAR_PROJECT_KEY"
+          exit 1
+
+      - name: Avisar SonarCloud omitido en PR externo
+        if: github.event_name == 'pull_request' && (env.SONAR_TOKEN == '' || env.SONAR_ORGANIZATION == '' || env.SONAR_PROJECT_KEY == '')
+        run: echo "SonarCloud se ejecutara al hacer push en main, cuando GitHub entregue secrets y variables."
+
       - name: Compilar para SonarCloud
+        if: env.SONAR_TOKEN != '' && env.SONAR_ORGANIZATION != '' && env.SONAR_PROJECT_KEY != ''
         run: ./mvnw -B -DskipTests package
 
       - name: Descargar reporte JaCoCo
+        if: env.SONAR_TOKEN != '' && env.SONAR_ORGANIZATION != '' && env.SONAR_PROJECT_KEY != ''
         uses: actions/download-artifact@v4
         with:
           name: jacoco-report
           path: target/site/jacoco
 
       - name: Analizar en SonarCloud
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_ORGANIZATION: ${{ vars.SONAR_ORGANIZATION }}
-          SONAR_PROJECT_KEY: ${{ vars.SONAR_PROJECT_KEY }}
+        if: env.SONAR_TOKEN != '' && env.SONAR_ORGANIZATION != '' && env.SONAR_PROJECT_KEY != ''
         run: |
-          test -n "$SONAR_TOKEN" || (echo "Falta configurar el secret SONAR_TOKEN" && exit 1)
-          test -n "$SONAR_ORGANIZATION" || (echo "Falta configurar la variable SONAR_ORGANIZATION" && exit 1)
-          test -n "$SONAR_PROJECT_KEY" || (echo "Falta configurar la variable SONAR_PROJECT_KEY" && exit 1)
           ./mvnw -B org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
             -Dsonar.host.url=https://sonarcloud.io \
             -Dsonar.organization="$SONAR_ORGANIZATION" \
