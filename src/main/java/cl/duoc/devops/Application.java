@@ -8,7 +8,7 @@ import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 
 public final class Application {
-  static final String RESPONSE = "Hola Mundo\n";
+  static final String RESPONSE = "Prueba Fallida\n";
   private static HttpServer runningServer;
 
   private Application() {
